@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>佰腾空运估算器</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #1e88e5;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .note {
+            text-align: center;
+            color: #d32f2f;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        .channel-select {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        select {
+            padding: 10px 16px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #1e88e5;
+        }
+        .package {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            background: #fafafa;
+            position: relative;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #e53935;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #444;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .add-btn {
+            background: #43a047;
+            color: white;
+        }
+        .calc-btn {
+            width: 100%;
+            padding: 14px;
+            background: #1e88e5;
+            color: white;
+            font-size: 18px;
+            margin-top: 15px;
+        }
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f0f8ff;
+            border-radius: 12px;
+            border: 2px solid #1e88e5;
+            display: none;
+        }
+        .result.show { display: block; }
+        .total {
+            font-size: 26px;
+            font-weight: bold;
+            color: #d32f2f;
+            text-align: center;
+            padding: 18px;
+            background: #ffebee;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .author {
+            text-align: center;
+            margin-top: 30px;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>佰腾空运估算器</h1>
+        <p class="subtitle">中墨直航 · 双清到门 DDP</p>
+        <p class="note"><strong>最终以佰腾官方确认为准</strong></p>
+
+        <div class="channel-select">
+            <label>选择渠道：</label>
+            <select id="channel">
+                <option value="A">普货 ZXMX-02(A)</option>
+                <option value="S">敏感货 ZXMX-02(S)</option>
+                <option value="B">特殊货 ZXMX-02(B)</option>
+            </select>
+        </div>
+
+        <div id="packages"></div>
+
+        <button class="add-btn" onclick="addPackage()">+ 添加包裹</button>
+        <button class="calc-btn" onclick="calculateAll()">🚀 计算总运费</button>
+
+        <div id="result" class="result">
+            <h2 style="text-align:center; color:#1e88e5;">计算结果</h2>
+            <div id="details"></div>
+            
+            <div style="margin:20px 0; padding:15px; background:white; border-radius:8px; font-size:18px;">
+                <strong>总计费重量：</strong><span id="showTotalWeight" style="color:#1e88e5;"></span> KG
+            </div>
+            
+            <div class="total">
+                总金额：¥ <span id="showTotal">0</span>
+            </div>
+            
+            <div style="text-align:center; margin-top:15px; font-size:14px; color:#666;">
+                <strong>最终以佰腾官方确认为准</strong>
+            </div>
+        </div>
+
+        <div class="author">
+            作者：Kimi Ding
+        </div>
+    </div>
+
+    <script>
+        let packageCount = 0;
+
+        function addPackage() {
+            packageCount++;
+            const packagesDiv = document.getElementById('packages');
+            const pkg = document.createElement('div');
+            pkg.className = 'package';
+            pkg.id = `pkg-${packageCount}`;
+            pkg.innerHTML = `
+                <button class="remove-btn" onclick="removePackage(${packageCount})">删除</button>
+                <h3>包裹 ${packageCount}</h3>
+                <div class="input-group">
+                    <label>长 (cm)</label>
+                    <input type="number" id="length-${packageCount}" step="0.1" value="">
+                </div>
+                <div class="input-group">
+                    <label>宽 (cm)</label>
+                    <input type="number" id="width-${packageCount}" step="0.1" value="">
+                </div>
+                <div class="input-group">
+                    <label>高 (cm)</label>
+                    <input type="number" id="height-${packageCount}" step="0.1" value="">
+                </div>
+                <div class="input-group">
+                    <label>实重 (KG)</label>
+                    <input type="number" id="realWeight-${packageCount}" step="0.01" value="">
+                </div>
+            `;
+            packagesDiv.appendChild(pkg);
+        }
+
+        function removePackage(id) {
+            const pkg = document.getElementById(`pkg-${id}`);
+            if (pkg) pkg.remove();
+        }
+
+        function getUnitPricePerKg(channel, totalWeight) {
+            if (channel === 'S') {
+                if (totalWeight <= 5.0) return 105;
+                if (totalWeight <= 20.9) return 105;
+                if (totalWeight <= 44.9) return 103;
+                if (totalWeight <= 300) return 102;
+                return 101;
+            } else if (channel === 'B') {
+                if (totalWeight <= 5.0) return 110;
+                if (totalWeight <= 20.9) return 110;
+                if (totalWeight <= 44.9) return 108;
+                if (totalWeight <= 300) return 107;
+                return 106;
+            } else { // 普货
+                if (totalWeight <= 5.0) return 98;
+                if (totalWeight <= 20.9) return 98;
+                if (totalWeight <= 44.9) return 96;
+                if (totalWeight <= 300) return 95;
+                return 94;
+            }
+        }
+
+        function calculateChargeable(length, width, height, realWeight) {
+            const volume = length * width * height;
+            const volumeWeight = volume / 6000;
+            let chargeable = Math.max(realWeight, volumeWeight);
+            chargeable = Math.ceil(chargeable * 2) / 2;
+            if (chargeable < 0.5) chargeable = 0.5;
+            return { chargeable, volumeWeight: volumeWeight.toFixed(2) };
+        }
+
+        function calculateAll() {
+            const channel = document.getElementById('channel').value;
+            let totalChargeable = 0;
+            let html = '';
+
+            const packages = document.querySelectorAll('.package');
+            packages.forEach((pkg) => {
+                const num = pkg.id.split('-')[1];
+                const length = parseFloat(document.getElementById(`length-${num}`).value) || 0;
+                const width = parseFloat(document.getElementById(`width-${num}`).value) || 0;
+                const height = parseFloat(document.getElementById(`height-${num}`).value) || 0;
+                const realWeight = parseFloat(document.getElementById(`realWeight-${num}`).value) || 0;
+
+                if (length <= 0 || width <= 0 || height <= 0) return;
+
+                const res = calculateChargeable(length, width, height, realWeight);
+                totalChargeable += res.chargeable;
+
+                html += `
+                    <div style="margin:10px 0; padding:12px; background:white; border-radius:8px;">
+                        <strong>包裹 ${num}：</strong> ${length}×${width}×${height} cm<br>
+                        材积重：${res.volumeWeight} KG | 计费重量：${res.chargeable} KG
+                    </div>`;
+            });
+
+            if (totalChargeable === 0) {
+                alert("请至少添加一个有效包裹！");
+                return;
+            }
+
+            const pricePerKg = getUnitPricePerKg(channel, totalChargeable);
+            const baseFreight = Math.round(totalChargeable * pricePerKg);
+
+            document.getElementById('details').innerHTML = html;
+            document.getElementById('showTotalWeight').textContent = totalChargeable.toFixed(1);
+            document.getElementById('showTotal').textContent = baseFreight;
+            document.getElementById('result').classList.add('show');
+        }
+
+        // 页面加载时只添加一个空包裹
+        window.onload = () => {
+            addPackage();
+        };
+    </script>
+</body>
+</html>
